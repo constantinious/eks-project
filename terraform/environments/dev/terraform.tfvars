@@ -55,8 +55,8 @@ grafana_admin_password   = "changeme-dev" # Override via TF_VAR_grafana_admin_pa
 prometheus_retention     = "3d"           # Minimal retention
 prometheus_pvc_size      = "10Gi"         # Minimal PVCs
 grafana_pvc_size         = "2Gi"
-loki_retention_days      = 7  # 1 week for dev
-tempo_retention_days     = 1  # 1 day for dev
+loki_retention_days      = 7 # 1 week for dev
+tempo_retention_days     = 1 # 1 day for dev
 
 # Additional tags
 tags = {

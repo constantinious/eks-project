@@ -105,13 +105,13 @@ variable "enable_cluster_autoscaler" {
 variable "enabled_cluster_log_types" {
   description = "EKS control plane log types to enable"
   type        = list(string)
-  default     = ["api", "audit"]  # Minimal set for cost optimization
+  default     = ["api", "audit"] # Minimal set for cost optimization
 }
 
 variable "log_retention_days" {
   description = "Retention period for EKS control plane logs (days)"
   type        = number
-  default     = 7  # Reduced for cost optimization
+  default     = 7 # Reduced for cost optimization
 }
 
 variable "tags" {

@@ -140,7 +140,7 @@ variable "enable_cluster_autoscaler" {
 variable "enabled_cluster_log_types" {
   description = "EKS control plane log types to enable (reduces CloudWatch costs when minimal)"
   type        = list(string)
-  default     = ["api", "audit"]  # Minimal set for cost optimization
+  default     = ["api", "audit"] # Minimal set for cost optimization
 }
 
 # ------------------------------------------------------------------------------
