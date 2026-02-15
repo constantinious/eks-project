@@ -192,13 +192,13 @@ module "monitoring_storage" {
   source = "./modules/monitoring-storage"
   count  = var.enable_monitoring ? 1 : 0
 
-  cluster_name        = module.eks.cluster_name
-  oidc_provider_arn   = module.eks.oidc_provider_arn
-  oidc_provider_url   = module.eks.oidc_provider_url
-  loki_retention_days = var.loki_retention_days
+  cluster_name         = module.eks.cluster_name
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+  oidc_provider_url    = module.eks.oidc_provider_url
+  loki_retention_days  = var.loki_retention_days
   tempo_retention_days = var.tempo_retention_days
-  force_destroy       = var.monitoring_force_destroy
-  tags                = local.common_tags
+  force_destroy        = var.monitoring_force_destroy
+  tags                 = local.common_tags
 }
 
 # ------------------------------------------------------------------------------

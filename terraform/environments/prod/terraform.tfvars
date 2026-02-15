@@ -40,8 +40,8 @@ alb_controller_version = "1.10.1"
 
 # Monitoring & Observability
 enable_monitoring        = true
-monitoring_force_destroy = false  # Protect production data
-grafana_admin_password   = "changeme-prod"  # Override via TF_VAR_grafana_admin_password
+monitoring_force_destroy = false           # Protect production data
+grafana_admin_password   = "changeme-prod" # Override via TF_VAR_grafana_admin_password
 prometheus_retention     = "30d"
 prometheus_pvc_size      = "100Gi"
 grafana_pvc_size         = "10Gi"

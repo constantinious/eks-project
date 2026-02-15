@@ -12,9 +12,9 @@ resource "kubernetes_namespace_v1" "monitoring" {
     name = "monitoring"
 
     labels = {
-      "app.kubernetes.io/managed-by" = "terraform"
+      "app.kubernetes.io/managed-by"               = "terraform"
       "pod-security.kubernetes.io/enforce"         = "baseline"
-      "pod-security.kubernetes.io/enforce-version"  = "latest"
+      "pod-security.kubernetes.io/enforce-version" = "latest"
     }
   }
 }
@@ -30,10 +30,10 @@ resource "kubernetes_resource_quota_v1" "monitoring" {
 
   spec {
     hard = {
-      "requests.cpu"    = var.namespace_cpu_request_quota
-      "requests.memory" = var.namespace_memory_request_quota
-      "limits.cpu"      = var.namespace_cpu_limit_quota
-      "limits.memory"   = var.namespace_memory_limit_quota
+      "requests.cpu"           = var.namespace_cpu_request_quota
+      "requests.memory"        = var.namespace_memory_request_quota
+      "limits.cpu"             = var.namespace_cpu_limit_quota
+      "limits.memory"          = var.namespace_memory_limit_quota
       "persistentvolumeclaims" = "20"
     }
   }
@@ -76,7 +76,7 @@ resource "helm_release" "kube_prometheus_stack" {
   values = [templatefile("${path.module}/values/prometheus-stack-values.yaml", {
     grafana_admin_password = var.grafana_admin_password
     storage_class          = var.storage_class
-    prometheus_retention    = var.prometheus_retention
+    prometheus_retention   = var.prometheus_retention
     prometheus_pvc_size    = var.prometheus_pvc_size
     grafana_pvc_size       = var.grafana_pvc_size
     loki_url               = "http://loki:3100"
