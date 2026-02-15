@@ -306,6 +306,25 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform apply -auto-approve tfplan
 
+      - name: ArgoCD GitOps Info
+        if: success()
+        run: |
+          echo "✅ Infrastructure deployed successfully!"
+          echo ""
+          echo "🤖 ArgoCD GitOps is enabled and will automatically:"
+          echo "   - Monitor the 'main' branch for changes in kubernetes/manifests/"
+          echo "   - Sync changes to the cluster within 3 minutes"
+          echo "   - Prune deleted resources automatically"
+          echo ""
+          echo "📋 No manual kubectl apply needed! Push to main and ArgoCD handles deployment."
+          echo ""
+          echo "🔍 To access ArgoCD UI:"
+          echo "   kubectl port-forward svc/argo-cd-argocd-server -n argocd 8080:443"
+          echo "   Then open: https://localhost:8080"
+          echo ""
+          echo "🔑 Get ArgoCD admin password:"
+          echo "   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
+
   # --------------------------------------------------------------------------
   # Destroy - manual trigger only (safety net)
   # --------------------------------------------------------------------------

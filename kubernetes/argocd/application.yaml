@@ -1,0 +1,47 @@
+---
+# ArgoCD Application for automatic deployment of demo-app
+# This should be applied after ArgoCD is deployed by Terraform
+#
+# Apply with:
+#   kubectl apply -f kubernetes/argocd/application.yaml
+#
+# Or via ArgoCD CLI:
+#   argocd app create demo-app --file kubernetes/argocd/application.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: demo-app
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/constantinious/eks-project.git
+    targetRevision: main
+    path: kubernetes/manifests
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demo-app
+  
+  syncPolicy:
+    automated:
+      prune: true      # Automatically delete resources removed from Git
+      selfHeal: true   # Automatically revert manual changes
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  # Health check configuration
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas  # Ignore replica count if using HPA

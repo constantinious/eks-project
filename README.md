@@ -65,6 +65,7 @@ eks-portfolio-project/
 │   │   ├── eks/                   # EKS cluster, node groups, IRSA
 │   │   ├── alb-controller/        # AWS Load Balancer Controller (Helm)
 │   │   ├── route53/               # ExternalDNS, ACM certificate
+│   │   ├── argocd/                # ArgoCD EKS add-on for GitOps
 │   │   ├── security/              # KMS keys, security groups
 │   │   ├── ebs-csi/               # EBS CSI driver, gp3 StorageClass
 │   │   ├── monitoring-storage/    # S3 buckets + IRSA for Loki & Tempo
@@ -234,8 +235,40 @@ aws eks update-kubeconfig \
 
 ### Step 8: Deploy Application
 
+**Option A: GitOps with ArgoCD (Recommended for Production)**
+
+ArgoCD is deployed as an AWS EKS add-on and automatically syncs your Kubernetes manifests from the `main` branch:
+
 ```bash
-# Apply all Kubernetes manifests
+# ArgoCD is automatically deployed by Terraform
+# Check ArgoCD status
+kubectl get pods -n argocd
+
+# Get ArgoCD admin password
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d && echo
+
+# Access ArgoCD UI (port-forward)
+kubectl port-forward svc/argo-cd-argocd-server -n argocd 8080:443
+# Then open: https://localhost:8080
+# Username: admin
+# Password: (from command above)
+
+# Check Application sync status
+kubectl get applications -n argocd
+kubectl describe application demo-app -n argocd
+```
+
+**How GitOps Works:**
+1. Push changes to `kubernetes/manifests/` directory
+2. Commit and push to `main` branch
+3. ArgoCD detects changes within 3 minutes (or click "Sync" in UI)
+4. ArgoCD automatically applies changes to cluster
+5. Resources removed from Git are automatically deleted (auto-prune enabled)
+
+**Option B: Manual kubectl apply (Development Only)**
+
+```bash
+# Apply all Kubernetes manifests manually
 kubectl apply -f kubernetes/manifests/
 
 # Verify deployment
@@ -247,6 +280,8 @@ kubectl get hpa -n demo-app
 # Get ALB DNS name
 kubectl get ingress -n demo-app
 ```
+
+> 💡 **Best Practice:** Use ArgoCD for all environments. Manual `kubectl apply` should only be used for local testing or troubleshooting.
 
 ### Step 9: Access the Application
 
@@ -487,6 +522,156 @@ The pipeline includes automated cost estimation on every PR:
 
 ---
 
+## 🤖 GitOps with ArgoCD
+
+This project uses **ArgoCD as an AWS EKS add-on** for continuous deployment of Kubernetes manifests. ArgoCD provides declarative GitOps for application delivery.
+
+### Features
+
+- ✅ **AWS Native Integration**: Deployed via EKS add-on (managed by AWS)
+- ✅ **Automatic Sync**: Monitors `main` branch every 3 minutes
+- ✅ **Auto-Prune**: Removes resources deleted from Git
+- ✅ **Self-Heal**: Corrects manual changes back to Git state
+- ✅ **Zero Manual kubectl**: Push to Git, ArgoCD handles the rest
+
+### Architecture
+
+```
+┌─────────────┐          ┌──────────────┐          ┌─────────────────┐
+│   GitHub    │          │   ArgoCD     │          │   EKS Cluster   │
+│  (main)     │──watch──►│   Server     │──sync───►│   (demo-app)    │
+│             │          │  (argocd ns) │          │                 │
+└─────────────┘          └──────────────┘          └─────────────────┘
+      │                         │                           │
+      │  1. Push manifests      │  2. Detect changes        │  3. Apply changes
+      │     to main branch      │     within 3 min          │     automatically
+      │                         │                           │
+      └─────────────────────────┴───────────────────────────┘
+                     Full GitOps Workflow
+```
+
+### ArgoCD Configuration
+
+The ArgoCD Application is automatically created by Terraform and configured to:
+
+```yaml
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/constantinious/eks-project.git
+    targetRevision: main
+    path: kubernetes/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demo-app
+  syncPolicy:
+    automated:
+      prune: true      # Delete resources removed from Git
+      selfHeal: true   # Revert manual changes
+    syncOptions:
+      - CreateNamespace=true
+```
+
+### Accessing ArgoCD UI
+
+```bash
+# Get admin password
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath='{.data.password}' | base64 -d && echo
+
+# Port forward to access UI
+kubectl port-forward svc/argo-cd-argocd-server -n argocd 8080:443
+
+# Open browser to https://localhost:8080
+# Username: admin
+# Password: (from command above)
+```
+
+### ArgoCD CLI (Optional)
+
+```bash
+# Install ArgoCD CLI
+brew install argocd  # macOS
+# or
+curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+chmod +x argocd
+sudo mv argocd /usr/local/bin/
+
+# Login
+argocd login localhost:8080
+
+# List applications
+argocd app list
+
+# Sync application manually
+argocd app sync demo-app
+
+# View application details
+argocd app get demo-app
+
+# View sync history
+argocd app history demo-app
+```
+
+### GitOps Workflow
+
+**Deploying Changes:**
+
+1. **Edit manifests locally**
+   ```bash
+   # Update deployment replicas
+   vim kubernetes/manifests/01-deployment.yaml
+   ```
+
+2. **Commit and push to main**
+   ```bash
+   git add kubernetes/manifests/01-deployment.yaml
+   git commit -m "feat: scale demo-app to 3 replicas"
+   git push origin main
+   ```
+
+3. **ArgoCD syncs automatically**
+   - ArgoCD detects changes within 3 minutes
+   - Applies changes to cluster
+   - Shows sync status in UI
+
+4. **Verify deployment**
+   ```bash
+   kubectl get pods -n demo-app
+   # or check ArgoCD UI
+   ```
+
+**Rolling Back:**
+
+```bash
+# Option 1: Revert Git commit
+git revert HEAD
+git push origin main
+# ArgoCD will automatically sync the revert
+
+# Option 2: Use ArgoCD UI
+# Navigate to app → History → Select previous revision → Rollback
+
+# Option 3: Use ArgoCD CLI
+argocd app rollback demo-app <revision-id>
+```
+
+### Disabling ArgoCD (Optional)
+
+If you prefer manual kubectl deployments:
+
+```hcl
+# In terraform/environments/dev/terraform.tfvars
+enable_argocd = false
+```
+
+Then apply Terraform changes:
+```bash
+terraform apply -var-file="environments/dev/terraform.tfvars"
+```
+
+---
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -509,6 +694,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest)
 - [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/)
 - [ExternalDNS](https://github.com/kubernetes-sigs/external-dns)
+- [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
+- [EKS Add-ons - ArgoCD](https://docs.aws.amazon.com/eks/latest/userguide/eks-add-ons.html)
 - [Cluster Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler)
 - [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
 - [Grafana Loki](https://grafana.com/docs/loki/latest/)

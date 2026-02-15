@@ -41,10 +41,19 @@ node_desired_size         = 2
 node_disk_size            = 20
 enable_cluster_autoscaler = true
 
-# DNS (set to true and configure when you have a domain)
-create_dns_resources = false
-# domain_name        = "dev.example.com"
-# hosted_zone_id     = "Z0123456789ABCDEFGHIJ"
+# DNS (ExternalDNS configuration)
+create_dns_resources = true
+domain_name          = "condevelop.net"
+hosted_zone_id       = "Z01814392FEE2T297FHXM"
+
+# ArgoCD (GitOps - automatic deployment from Git)
+enable_argocd                = true
+argocd_enable_demo_app_sync  = true
+argocd_git_repo_url          = "https://github.com/constantinious/eks-project.git"
+argocd_git_target_revision   = "main"
+argocd_git_manifests_path    = "kubernetes/manifests"
+argocd_auto_prune            = true  # Delete resources removed from Git
+argocd_auto_sync             = true  # Auto-deploy when Git changes
 
 # ALB Controller
 alb_controller_version = "1.10.1"

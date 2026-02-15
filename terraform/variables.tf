@@ -266,3 +266,54 @@ variable "monitoring_force_destroy" {
   type        = bool
   default     = false
 }
+
+# ------------------------------------------------------------------------------
+# ArgoCD (GitOps)
+# ------------------------------------------------------------------------------
+variable "enable_argocd" {
+  description = "Enable ArgoCD EKS add-on for GitOps deployments"
+  type        = bool
+  default     = true
+}
+
+variable "argocd_addon_version" {
+  description = "Version of ArgoCD EKS add-on (null = latest)"
+  type        = string
+  default     = null
+}
+
+variable "argocd_enable_demo_app_sync" {
+  description = "Enable automatic sync of demo app from Git"
+  type        = bool
+  default     = true
+}
+
+variable "argocd_git_repo_url" {
+  description = "Git repository URL for ArgoCD to sync from"
+  type        = string
+  default     = "https://github.com/constantinious/eks-project.git"
+}
+
+variable "argocd_git_target_revision" {
+  description = "Git branch/tag/commit for ArgoCD to track"
+  type        = string
+  default     = "main"
+}
+
+variable "argocd_git_manifests_path" {
+  description = "Path in Git repo containing Kubernetes manifests"
+  type        = string
+  default     = "kubernetes/manifests"
+}
+
+variable "argocd_auto_prune" {
+  description = "Automatically delete resources removed from Git"
+  type        = bool
+  default     = true
+}
+
+variable "argocd_auto_sync" {
+  description = "Automatically sync when Git changes are detected"
+  type        = bool
+  default     = true
+}
