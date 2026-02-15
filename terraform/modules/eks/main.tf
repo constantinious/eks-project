@@ -11,6 +11,26 @@ data "aws_caller_identity" "current" {}
 data "aws_partition" "current" {}
 
 # ------------------------------------------------------------------------------
+# Locals
+# ------------------------------------------------------------------------------
+locals {
+  # Convert assumed role ARN to base role ARN for EKS access entries
+  # Example: arn:aws:sts::123456789012:assumed-role/role-name/session-name
+  #       -> arn:aws:iam::123456789012:role/role-name
+  caller_arn_parts = split("/", data.aws_caller_identity.current.arn)
+  
+  # Check if this is an assumed role ARN (contains "assumed-role")
+  is_assumed_role = length(regexall("assumed-role", data.aws_caller_identity.current.arn)) > 0
+  
+  # Extract the role name from assumed-role ARN
+  role_name = local.is_assumed_role ? local.caller_arn_parts[1] : ""
+  
+  # Build the base role ARN
+  base_role_arn = local.is_assumed_role ? "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/${local.role_name}" : data.aws_caller_identity.current.arn
+}
+
+
+# ------------------------------------------------------------------------------
 # EKS Cluster IAM Role
 # ------------------------------------------------------------------------------
 resource "aws_iam_role" "eks_cluster" {
@@ -322,7 +342,7 @@ resource "aws_iam_role_policy" "cluster_autoscaler" {
 # ------------------------------------------------------------------------------
 resource "aws_eks_access_entry" "admin" {
   cluster_name  = aws_eks_cluster.this.name
-  principal_arn = data.aws_caller_identity.current.arn
+  principal_arn = local.base_role_arn
   type          = "STANDARD"
 
   tags = var.tags
@@ -331,7 +351,7 @@ resource "aws_eks_access_entry" "admin" {
 resource "aws_eks_access_policy_association" "admin" {
   cluster_name  = aws_eks_cluster.this.name
   policy_arn    = "arn:${data.aws_partition.current.partition}:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-  principal_arn = data.aws_caller_identity.current.arn
+  principal_arn = local.base_role_arn
 
   access_scope {
     type = "cluster"
