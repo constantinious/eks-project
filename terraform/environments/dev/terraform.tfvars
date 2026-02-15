@@ -6,7 +6,7 @@
 # General
 aws_region   = "eu-west-1"
 project_name = "eks-portfolio"
-environment  = "dev"
+environment  = "Dev"
 
 # VPC
 vpc_cidr             = "10.0.0.0/16"
@@ -23,11 +23,11 @@ cluster_endpoint_private_access      = true
 cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"] # Restrict in production!
 
 # Node Groups
-node_instance_types    = ["t3.medium"]
-node_min_size          = 2
-node_max_size          = 5
-node_desired_size      = 2
-node_disk_size         = 30
+node_instance_types       = ["t4g.medium"]
+node_min_size             = 2
+node_max_size             = 5
+node_desired_size         = 2
+node_disk_size            = 30
 enable_cluster_autoscaler = true
 
 # DNS (set to true and configure when you have a domain)
@@ -42,4 +42,6 @@ alb_controller_version = "1.10.1"
 tags = {
   CostCenter = "development"
   Team       = "platform"
+  Owner      = "constantinious"
+  Service    = "eks-platform"
 }
