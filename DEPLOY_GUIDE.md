@@ -60,28 +60,34 @@
 
 2. **Login to ECR:**
    ```bash
+   # Get your AWS account ID
+   AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text --profile terraform_user)
+   
    aws ecr get-login-password --region eu-west-1 --profile terraform_user | \
-     docker login --username AWS --password-stdin 992382750905.dkr.ecr.eu-west-1.amazonaws.com
+     docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.eu-west-1.amazonaws.com
    ```
 
 3. **Build, tag, and push:**
    ```bash
+   # Get your AWS account ID
+   AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text --profile terraform_user)
+   
    # Build
    docker build -t prague-dashboard:v1.2.0 demo-app/
    
    # Tag
    docker tag prague-dashboard:v1.2.0 \
-     992382750905.dkr.ecr.eu-west-1.amazonaws.com/prague-dashboard:v1.2.0
+     ${AWS_ACCOUNT_ID}.dkr.ecr.eu-west-1.amazonaws.com/prague-dashboard:v1.2.0
    
    # Push
-   docker push 992382750905.dkr.ecr.eu-west-1.amazonaws.com/prague-dashboard:v1.2.0
+   docker push ${AWS_ACCOUNT_ID}.dkr.ecr.eu-west-1.amazonaws.com/prague-dashboard:v1.2.0
    ```
 
 4. **Update Kubernetes manifest:**
    
    Edit `kubernetes/manifests/01-deployment.yaml` line 29:
    ```yaml
-   image: 992382750905.dkr.ecr.eu-west-1.amazonaws.com/prague-dashboard:v1.2.0
+   image: YOUR_AWS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/prague-dashboard:v1.2.0
    ```
 
 5. **Commit and push** (same as Option 1 step 4)

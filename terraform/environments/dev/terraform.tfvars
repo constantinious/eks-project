@@ -61,7 +61,7 @@ alb_controller_version = "1.10.1"
 # Monitoring & Observability (disabled for cost optimization)
 enable_monitoring        = false          # Disable to save costs
 monitoring_force_destroy = true           # Allow bucket deletion in dev
-grafana_admin_password   = "changeme-dev" # Override via TF_VAR_grafana_admin_password
+grafana_admin_password   = "CHANGE_ME"    # REQUIRED: Set via TF_VAR_grafana_admin_password environment variable
 prometheus_retention     = "3d"           # Minimal retention
 prometheus_pvc_size      = "10Gi"         # Minimal PVCs
 grafana_pvc_size         = "2Gi"

@@ -28,3 +28,7 @@ Thumbs.db
 *.pem
 *.key
 *.env
+*.tfvars.local
+*secrets*
+.aws/
+kubeconfig*
