@@ -66,12 +66,20 @@ resource "aws_eks_cluster" "this" {
     resources = ["secrets"]
   }
 
+  # Access config is managed out-of-band via AWS CLI to avoid cluster replacement.
+  # The cluster has API_AND_CONFIG_MAP mode enabled for EKS Access Entries.
+
   # Control plane logging (minimal for cost optimization)
   enabled_cluster_log_types = var.enabled_cluster_log_types
 
   tags = merge(var.tags, {
     Name = var.cluster_name
   })
+
+  # Prevent replacement when access_config drifts
+  lifecycle {
+    ignore_changes = [access_config]
+  }
 
   depends_on = [
     aws_iam_role_policy_attachment.eks_cluster_policy,
@@ -198,6 +206,7 @@ resource "aws_eks_node_group" "this" {
   node_role_arn   = aws_iam_role.eks_nodes.arn
   subnet_ids      = var.private_subnet_ids # Workers in private subnets only
 
+  ami_type       = var.ami_type
   instance_types = var.node_instance_types
 
   scaling_config {
@@ -329,4 +338,31 @@ resource "aws_eks_access_policy_association" "admin" {
   }
 
   depends_on = [aws_eks_access_entry.admin]
+}
+
+# ------------------------------------------------------------------------------
+# EKS Access Entries for additional admins
+# ------------------------------------------------------------------------------
+resource "aws_eks_access_entry" "additional_admins" {
+  for_each = toset(var.additional_admin_arns)
+
+  cluster_name  = aws_eks_cluster.this.name
+  principal_arn = each.value
+  type          = "STANDARD"
+
+  tags = var.tags
+}
+
+resource "aws_eks_access_policy_association" "additional_admins" {
+  for_each = toset(var.additional_admin_arns)
+
+  cluster_name  = aws_eks_cluster.this.name
+  policy_arn    = "arn:${data.aws_partition.current.partition}:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  principal_arn = each.value
+
+  access_scope {
+    type = "cluster"
+  }
+
+  depends_on = [aws_eks_access_entry.additional_admins]
 }

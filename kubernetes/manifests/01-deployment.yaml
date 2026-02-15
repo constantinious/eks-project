@@ -1,7 +1,7 @@
 ---
 # ------------------------------------------------------------------------------
 # Demo Application Deployment
-# Lightweight 2048 game for showcasing the EKS cluster with ALB Ingress
+# Nginx web server for showcasing the EKS cluster with ALB Ingress
 # ------------------------------------------------------------------------------
 apiVersion: apps/v1
 kind: Deployment
@@ -22,17 +22,11 @@ spec:
       labels:
         app.kubernetes.io/name: demo-app
     spec:
-      # Security context for the pod
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
       containers:
         - name: demo-app
-          image: public.ecr.aws/l6m2t8p7/docker-2048:latest
+          image: nginxinc/nginx-unprivileged:1.25-alpine
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               protocol: TCP
               name: http
           # Resource requests and limits (required for HPA)
@@ -63,7 +57,7 @@ spec:
           # Security context for the container
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false
+            runAsNonRoot: true
             capabilities:
               drop:
                 - ALL

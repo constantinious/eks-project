@@ -26,11 +26,12 @@ single_nat_gateway   = true  # Cost optimization: single NAT for dev
 enable_vpc_flow_logs = false # Disable to reduce CloudWatch costs
 
 # EKS (minimal cost configuration)
-cluster_version                      = "1.29"
+cluster_version                      = "1.31"
 cluster_endpoint_public_access       = true
 cluster_endpoint_private_access      = true
 cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"] # Restrict in production!
 enabled_cluster_log_types            = ["api"]       # Minimal logging to reduce CloudWatch costs
+additional_admin_arns                = ["arn:aws:iam::992382750905:user/KostasAdmin"] # Additional cluster admins
 
 # Node Groups (minimal cost: t4g.small, 1-3 nodes)
 node_instance_types       = ["t4g.small"]

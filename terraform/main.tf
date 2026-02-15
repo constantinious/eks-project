@@ -108,7 +108,9 @@ module "eks" {
   cluster_endpoint_private_access      = var.cluster_endpoint_private_access
   cluster_endpoint_public_access       = var.cluster_endpoint_public_access
   cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
+  additional_admin_arns                = var.additional_admin_arns
   node_instance_types                  = var.node_instance_types
+  ami_type                             = var.ami_type
   node_min_size                        = var.node_min_size
   node_max_size                        = var.node_max_size
   node_desired_size                    = var.node_desired_size
