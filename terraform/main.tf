@@ -114,6 +114,7 @@ module "eks" {
   node_desired_size                    = var.node_desired_size
   node_disk_size                       = var.node_disk_size
   enable_cluster_autoscaler            = var.enable_cluster_autoscaler
+  enabled_cluster_log_types            = var.enabled_cluster_log_types
   tags                                 = local.common_tags
 }
 
