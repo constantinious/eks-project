@@ -23,13 +23,13 @@ metadata:
     alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
     alb.ingress.kubernetes.io/tags: Environment=dev,Project=eks-portfolio,ManagedBy=kubernetes
 
+    # ExternalDNS annotation - automatically creates Route53 DNS record
+    external-dns.alpha.kubernetes.io/hostname: demo.condevelop.net
+
     # ACM certificate ARN - uncomment and replace with your certificate ARN for HTTPS
     # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:eu-west-1:ACCOUNT_ID:certificate/CERT_ID
     # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     # alb.ingress.kubernetes.io/ssl-redirect: "443"
-
-    # ExternalDNS annotation - replace with your domain
-    # external-dns.alpha.kubernetes.io/hostname: app.dev.example.com
 spec:
   ingressClassName: alb
   rules:

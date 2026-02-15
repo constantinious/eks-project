@@ -41,10 +41,10 @@ node_desired_size         = 2
 node_disk_size            = 20
 enable_cluster_autoscaler = true
 
-# DNS (set to true and configure when you have a domain)
-create_dns_resources = false
-# domain_name        = "dev.example.com"
-# hosted_zone_id     = "Z0123456789ABCDEFGHIJ"
+# DNS (ExternalDNS configuration)
+create_dns_resources = true
+domain_name          = "condevelop.net"
+hosted_zone_id       = "Z01814392FEE2T297FHXM"
 
 # ALB Controller
 alb_controller_version = "1.10.1"
