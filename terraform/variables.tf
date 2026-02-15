@@ -137,6 +137,12 @@ variable "enable_cluster_autoscaler" {
   default     = true
 }
 
+variable "enabled_cluster_log_types" {
+  description = "EKS control plane log types to enable (reduces CloudWatch costs when minimal)"
+  type        = list(string)
+  default     = ["api", "audit"] # Minimal set for cost optimization
+}
+
 # ------------------------------------------------------------------------------
 # DNS & TLS
 # ------------------------------------------------------------------------------
@@ -165,4 +171,86 @@ variable "alb_controller_version" {
   description = "Version of the AWS Load Balancer Controller Helm chart"
   type        = string
   default     = "1.10.1"
+}
+
+# ------------------------------------------------------------------------------
+# Monitoring & Observability
+# ------------------------------------------------------------------------------
+variable "enable_monitoring" {
+  description = "Enable the full monitoring stack (Prometheus, Grafana, Loki, Tempo)"
+  type        = bool
+  default     = false
+}
+
+variable "grafana_admin_password" {
+  description = "Admin password for Grafana. Set via TF_VAR_grafana_admin_password or tfvars."
+  type        = string
+  default     = "changeme"
+  sensitive   = true
+}
+
+variable "ebs_csi_driver_version" {
+  description = "Version of the aws-ebs-csi-driver Helm chart"
+  type        = string
+  default     = "2.37.0"
+}
+
+variable "prometheus_stack_version" {
+  description = "Version of the kube-prometheus-stack Helm chart"
+  type        = string
+  default     = "67.9.0"
+}
+
+variable "loki_version" {
+  description = "Version of the Loki Helm chart"
+  type        = string
+  default     = "6.24.0"
+}
+
+variable "promtail_version" {
+  description = "Version of the Promtail Helm chart"
+  type        = string
+  default     = "6.16.6"
+}
+
+variable "tempo_version" {
+  description = "Version of the Tempo Helm chart"
+  type        = string
+  default     = "1.14.0"
+}
+
+variable "prometheus_retention" {
+  description = "Prometheus data retention period"
+  type        = string
+  default     = "15d"
+}
+
+variable "prometheus_pvc_size" {
+  description = "Prometheus PVC size"
+  type        = string
+  default     = "50Gi"
+}
+
+variable "grafana_pvc_size" {
+  description = "Grafana PVC size"
+  type        = string
+  default     = "10Gi"
+}
+
+variable "loki_retention_days" {
+  description = "Number of days to retain logs in Loki S3"
+  type        = number
+  default     = 30
+}
+
+variable "tempo_retention_days" {
+  description = "Number of days to retain traces in Tempo S3"
+  type        = number
+  default     = 7
+}
+
+variable "monitoring_force_destroy" {
+  description = "Allow force destroy of monitoring S3 buckets (useful for dev)"
+  type        = bool
+  default     = false
 }

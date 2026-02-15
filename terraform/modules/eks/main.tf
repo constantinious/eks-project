@@ -66,14 +66,8 @@ resource "aws_eks_cluster" "this" {
     resources = ["secrets"]
   }
 
-  # Control plane logging
-  enabled_cluster_log_types = [
-    "api",
-    "audit",
-    "authenticator",
-    "controllerManager",
-    "scheduler"
-  ]
+  # Control plane logging (minimal for cost optimization)
+  enabled_cluster_log_types = var.enabled_cluster_log_types
 
   tags = merge(var.tags, {
     Name = var.cluster_name

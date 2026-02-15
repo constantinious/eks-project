@@ -99,3 +99,31 @@ output "configure_kubectl" {
   description = "Command to configure kubectl for the cluster"
   value       = "aws eks update-kubeconfig --name ${module.eks.cluster_name} --region ${var.aws_region}"
 }
+
+# ------------------------------------------------------------------------------
+# Monitoring & Observability
+# ------------------------------------------------------------------------------
+output "monitoring_namespace" {
+  description = "Namespace where monitoring stack is deployed"
+  value       = var.enable_monitoring ? module.monitoring_stack[0].monitoring_namespace : "N/A - Monitoring not enabled"
+}
+
+output "grafana_port_forward" {
+  description = "Command to access Grafana locally"
+  value       = var.enable_monitoring ? module.monitoring_stack[0].grafana_port_forward_command : "N/A - Monitoring not enabled"
+}
+
+output "prometheus_port_forward" {
+  description = "Command to access Prometheus locally"
+  value       = var.enable_monitoring ? module.monitoring_stack[0].prometheus_port_forward_command : "N/A - Monitoring not enabled"
+}
+
+output "loki_s3_bucket" {
+  description = "S3 bucket used for Loki log storage"
+  value       = var.enable_monitoring ? module.monitoring_storage[0].loki_s3_bucket_name : "N/A - Monitoring not enabled"
+}
+
+output "tempo_s3_bucket" {
+  description = "S3 bucket used for Tempo trace storage"
+  value       = var.enable_monitoring ? module.monitoring_storage[0].tempo_s3_bucket_name : "N/A - Monitoring not enabled"
+}

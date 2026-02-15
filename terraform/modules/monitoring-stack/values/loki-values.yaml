@@ -1,0 +1,108 @@
+# ------------------------------------------------------------------------------
+# Loki Helm Values
+# Log aggregation with S3 backend storage
+# ------------------------------------------------------------------------------
+
+# Deploy in single-binary mode for simplicity (suitable for dev/small prod)
+deploymentMode: SingleBinary
+
+loki:
+  auth_enabled: false
+
+  commonConfig:
+    replication_factor: 1
+
+  schemaConfig:
+    configs:
+      - from: "2024-01-01"
+        store: tsdb
+        object_store: s3
+        schema: v13
+        index:
+          prefix: loki_index_
+          period: 24h
+
+  storage:
+    type: s3
+    s3:
+      region: ${s3_bucket_region}
+      bucketnames: ${s3_bucket_name}
+      s3ForcePathStyle: false
+
+  limits_config:
+    retention_period: ${retention_days * 24}h
+    max_query_lookback: ${retention_days * 24}h
+    ingestion_rate_mb: 10
+    ingestion_burst_size_mb: 20
+    max_entries_limit_per_query: 10000
+    max_streams_per_user: 10000
+
+  compactor:
+    working_directory: /var/loki/compactor
+    compaction_interval: 10m
+    retention_enabled: true
+    retention_delete_delay: 2h
+    delete_request_store: s3
+
+# --- Service Account with IRSA ---
+serviceAccount:
+  create: true
+  name: loki
+  annotations:
+    eks.amazonaws.com/role-arn: ${iam_role_arn}
+
+# --- SingleBinary mode resources ---
+singleBinary:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+
+  persistence:
+    enabled: true
+    storageClass: "${storage_class}"
+    size: 10Gi
+
+# --- Disable components not needed in SingleBinary mode ---
+backend:
+  replicas: 0
+read:
+  replicas: 0
+write:
+  replicas: 0
+
+# --- Gateway ---
+gateway:
+  enabled: true
+  replicas: 1
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "128Mi"
+
+# --- Monitoring ---
+monitoring:
+  selfMonitoring:
+    enabled: false
+    grafanaAgent:
+      installOperator: false
+  lokiCanary:
+    enabled: false
+
+# --- Disable test ---
+test:
+  enabled: false
+
+# --- Chunksache ---
+chunksCache:
+  enabled: false
+
+resultsCache:
+  enabled: false

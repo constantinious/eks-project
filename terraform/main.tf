@@ -114,6 +114,7 @@ module "eks" {
   node_desired_size                    = var.node_desired_size
   node_disk_size                       = var.node_disk_size
   enable_cluster_autoscaler            = var.enable_cluster_autoscaler
+  enabled_cluster_log_types            = var.enabled_cluster_log_types
   tags                                 = local.common_tags
 }
 
@@ -166,4 +167,78 @@ resource "helm_release" "metrics_server" {
   }
 
   depends_on = [module.eks]
+}
+
+# ------------------------------------------------------------------------------
+# EBS CSI Driver (required for gp3 StorageClass & PVCs)
+# ------------------------------------------------------------------------------
+module "ebs_csi" {
+  source = "./modules/ebs-csi"
+  count  = var.enable_monitoring ? 1 : 0
+
+  cluster_name      = module.eks.cluster_name
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  oidc_provider_url = module.eks.oidc_provider_url
+  ebs_kms_key_arn   = module.security.ebs_kms_key_arn
+  chart_version     = var.ebs_csi_driver_version
+  tags              = local.common_tags
+
+  depends_on = [module.eks]
+}
+
+# ------------------------------------------------------------------------------
+# Monitoring Storage (S3 buckets & IRSA roles for Loki + Tempo)
+# ------------------------------------------------------------------------------
+module "monitoring_storage" {
+  source = "./modules/monitoring-storage"
+  count  = var.enable_monitoring ? 1 : 0
+
+  cluster_name         = module.eks.cluster_name
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+  oidc_provider_url    = module.eks.oidc_provider_url
+  loki_retention_days  = var.loki_retention_days
+  tempo_retention_days = var.tempo_retention_days
+  force_destroy        = var.monitoring_force_destroy
+  tags                 = local.common_tags
+}
+
+# ------------------------------------------------------------------------------
+# Monitoring Stack (Prometheus, Grafana, Loki, Promtail, Tempo)
+# ------------------------------------------------------------------------------
+module "monitoring_stack" {
+  source = "./modules/monitoring-stack"
+  count  = var.enable_monitoring ? 1 : 0
+
+  cluster_name           = module.eks.cluster_name
+  aws_region             = var.aws_region
+  storage_class          = module.ebs_csi[0].storage_class_name
+  grafana_admin_password = var.grafana_admin_password
+
+  # Loki configuration
+  loki_s3_bucket_name = module.monitoring_storage[0].loki_s3_bucket_name
+  loki_iam_role_arn   = module.monitoring_storage[0].loki_iam_role_arn
+  loki_retention_days = var.loki_retention_days
+
+  # Tempo configuration
+  tempo_s3_bucket_name = module.monitoring_storage[0].tempo_s3_bucket_name
+  tempo_iam_role_arn   = module.monitoring_storage[0].tempo_iam_role_arn
+  tempo_retention_days = var.tempo_retention_days
+
+  # Chart versions
+  prometheus_stack_version = var.prometheus_stack_version
+  loki_version             = var.loki_version
+  promtail_version         = var.promtail_version
+  tempo_version            = var.tempo_version
+
+  # Sizing
+  prometheus_retention = var.prometheus_retention
+  prometheus_pvc_size  = var.prometheus_pvc_size
+  grafana_pvc_size     = var.grafana_pvc_size
+
+  tags = local.common_tags
+
+  depends_on = [
+    module.ebs_csi,
+    module.monitoring_storage
+  ]
 }
