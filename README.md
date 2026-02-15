@@ -2,7 +2,7 @@
 
 Production-ready AWS EKS infrastructure demonstrating DevOps best practices using Terraform, with complete CI/CD pipeline integration.
 
-![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5.0-844FBA?logo=terraform)
+![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.10.0-844FBA?logo=terraform)
 ![AWS](https://img.shields.io/badge/AWS-EKS_1.29-FF9900?logo=amazonaws)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
@@ -40,7 +40,7 @@ Production-ready AWS EKS infrastructure demonstrating DevOps best practices usin
     │  Logs    │                    │  │  │  │                                     │    │ │ │
     └──────────┘                    │  │  │  │  ┌───────────────────────────────┐  │    │ │ │
                                     │  │  │  │  │    Managed Node Group         │  │    │ │ │
-                                    │  │  │  │  │    t3.medium | 2-10 nodes    │  │    │ │ │
+                                    │  │  │  │  │    t4g.medium | 2-10 nodes   │  │    │ │ │
                                     │  │  │  │  │    Encrypted EBS (gp3)       │  │    │ │ │
                                     │  │  │  │  │    IMDSv2 enforced           │  │    │ │ │
                                     │  │  │  │  └───────────────────────────────┘  │    │ │ │
@@ -114,13 +114,12 @@ eks-portfolio-project/
 
 ## 📋 Prerequisites
 
-- **Terraform** >= 1.5.0 ([Install](https://developer.hashicorp.com/terraform/install))
+- **Terraform** >= 1.10.0 ([Install](https://developer.hashicorp.com/terraform/install))
 - **AWS CLI** v2 ([Install](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html))
 - **kubectl** ([Install](https://kubernetes.io/docs/tasks/tools/))
 - **Helm** v3 ([Install](https://helm.sh/docs/intro/install/))
 - **AWS Account** with appropriate IAM permissions
-- **S3 Bucket** for Terraform remote state (optional but recommended)
-- **DynamoDB Table** for state locking (optional but recommended)
+- **S3 Bucket** for Terraform remote state (uses native S3 locking, no DynamoDB needed)
 
 ### Required IAM Permissions
 
@@ -148,35 +147,33 @@ cd eks-project
 
 ### Step 2: Configure Remote State (Recommended)
 
-Create the S3 bucket and DynamoDB table for state management:
+Create the S3 bucket for state management with native S3 locking:
 
 ```bash
 # Create S3 bucket for state
 aws s3api create-bucket \
-  --bucket eks-portfolio-terraform-state-dev \
+  --bucket eks-portfolio-terraform-state \
   --region eu-west-1 \
   --create-bucket-configuration LocationConstraint=eu-west-1
 
-# Enable versioning
+# Enable versioning (required for S3 native locking)
 aws s3api put-bucket-versioning \
-  --bucket eks-portfolio-terraform-state-dev \
+  --bucket eks-portfolio-terraform-state \
   --versioning-configuration Status=Enabled
 
 # Enable encryption
 aws s3api put-bucket-encryption \
-  --bucket eks-portfolio-terraform-state-dev \
+  --bucket eks-portfolio-terraform-state \
   --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"aws:kms"}}]}'
 
-# Create DynamoDB table for state locking
-aws dynamodb create-table \
-  --table-name terraform-state-lock-dev \
-  --attribute-definitions AttributeName=LockID,AttributeType=S \
-  --key-schema AttributeName=LockID,KeyType=HASH \
-  --billing-mode PAY_PER_REQUEST \
-  --region eu-west-1
+# Block public access
+aws s3api put-public-access-block \
+  --bucket eks-portfolio-terraform-state \
+  --public-access-block-configuration \
+    "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
 ```
 
-Then uncomment the backend configuration in `terraform/versions.tf`.
+> **Note:** This configuration uses Terraform 1.10+ native S3 state locking with `use_lockfile = true`. No DynamoDB table needed!
 
 ### Step 3: Configure Variables
 
@@ -218,7 +215,7 @@ terraform apply -var-file="environments/dev/terraform.tfvars"
 
 ```bash
 aws eks update-kubeconfig \
-  --name eks-portfolio-dev \
+  --name eks-portfolio-Dev \
   --region eu-west-1
 ```
 
@@ -257,11 +254,12 @@ Open the URL in your browser to see the 2048 game! 🎮
 | Parameter | Dev | Prod |
 |---|---|---|
 | NAT Gateways | 1 (cost optimization) | 3 (one per AZ - HA) |
-| Node instance type | t3.medium | t3.large |
+| Node instance type | t4g.medium (ARM Graviton) | t3.large |
 | Node min/max | 2/5 | 3/10 |
 | Node disk size | 30 GB | 50 GB |
 | API endpoint CIDR | 0.0.0.0/0 | Restricted |
 | VPC CIDR | 10.0.0.0/16 | 10.1.0.0/16 |
+| Environment tag | Dev | Prod |
 
 ### Enabling DNS/TLS (Optional)
 
@@ -327,8 +325,8 @@ terraform destroy -var-file="environments/dev/terraform.tfvars"
 ### Clean Up State Resources
 
 ```bash
-aws s3 rb s3://eks-portfolio-terraform-state-dev --force
-aws dynamodb delete-table --table-name terraform-state-lock-dev --region eu-west-1
+# Delete S3 state bucket (caution: this removes all state history)
+aws s3 rb s3://eks-portfolio-terraform-state --force
 ```
 
 ---
@@ -341,14 +339,35 @@ The GitHub Actions workflow (`.github/workflows/terraform.yml`) provides:
 |---|---|---|
 | **Validate** | All PRs & pushes | `terraform fmt`, `init`, `validate` |
 | **Security** | After validation | Checkov security scan |
-| **Plan** | PRs & manual | `terraform plan` with PR comments |
-| **Apply** | Manual only | `terraform apply` with approval |
+| **Plan** | PRs only | `terraform plan` with PR comments |
+| **Cost Estimate** | PRs only | Infracost monthly cost breakdown |
+| **Apply** | Merge to main | `terraform apply` (auto-approve) |
+| **Destroy** | Manual only | `terraform destroy` with approval |
+
+### Cost Estimation with Infracost
+
+The pipeline includes automated cost estimation on every PR:
+- Generates baseline cost from `main` branch
+- Compares with PR changes to show cost diff
+- Posts monthly cost breakdown as PR comment
+- Helps prevent cost surprises before infrastructure changes are applied
 
 ### Setup
 
-1. Create an IAM role for GitHub Actions with OIDC federation
-2. Add `AWS_ROLE_ARN` as a repository secret
-3. Configure environment protection rules for `prod`
+1. Create an IAM role for GitHub Actions with OIDC federation:
+   ```bash
+   # Create OIDC identity provider
+   aws iam create-open-id-connect-provider \
+     --url https://token.actions.githubusercontent.com \
+     --client-id-list sts.amazonaws.com \
+     --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
+   
+   # Create trust policy and IAM role (see AWS OIDC docs)
+   ```
+2. Add GitHub repository secrets:
+   - `AWS_ROLE_ARN` - IAM role for Terraform operations
+   - `INFRACOST_API_KEY` - API key from [infracost.io](https://www.infracost.io/)
+3. Configure environment protection rules for `production` (if using destroy workflow)
 
 ---
 
