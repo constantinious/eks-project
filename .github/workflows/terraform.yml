@@ -2,7 +2,7 @@
 # GitHub Actions - Terraform CI/CD Pipeline
 #
 # Trigger logic:
-#   - Pull Request → main   :  validate → security → terraform plan (posted to PR)
+#   - Pull Request → main   :  validate → security → terraform plan + cost estimate (posted to PR)
 #   - Merge/push → main     :  validate → security → terraform apply (auto-approve)
 #   - Manual dispatch        :  plan / apply / destroy (selectable)
 # ------------------------------------------------------------------------------
@@ -193,6 +193,79 @@ jobs:
       - name: Fail if plan failed
         if: steps.plan.outcome == 'failure'
         run: exit 1
+
+  # --------------------------------------------------------------------------
+  # Cost Estimate - runs on PRs alongside the plan
+  # Uses Infracost to show monthly cost impact of changes
+  # --------------------------------------------------------------------------
+  cost-estimate:
+    name: "Cost Estimate"
+    runs-on: ubuntu-latest
+    needs: [validate, security]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      # Generate Infracost baseline from main branch
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          path: base
+
+      - name: Infracost baseline
+        run: |
+          cd base/terraform
+          terraform init -backend=false
+          infracost breakdown \
+            --path . \
+            --terraform-var-file="environments/${{ env.TF_ENVIRONMENT }}/terraform.tfvars" \
+            --format json \
+            --out-file /tmp/infracost-base.json
+        continue-on-error: true
+
+      # Generate Infracost diff for the PR branch
+      - name: Infracost diff
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          infracost diff \
+            --path . \
+            --terraform-var-file="environments/${{ env.TF_ENVIRONMENT }}/terraform.tfvars" \
+            --compare-to /tmp/infracost-base.json \
+            --format json \
+            --out-file /tmp/infracost-diff.json
+        continue-on-error: true
+
+      # Post cost estimate as PR comment
+      - name: Post Infracost comment
+        run: |
+          infracost comment github \
+            --path /tmp/infracost-diff.json \
+            --repo ${{ github.repository }} \
+            --github-token ${{ github.token }} \
+            --pull-request ${{ github.event.pull_request.number }} \
+            --behavior update
 
   # --------------------------------------------------------------------------
   # Apply - runs ONLY on push/merge to main
