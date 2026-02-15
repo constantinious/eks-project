@@ -66,10 +66,16 @@ variable "cluster_endpoint_public_access_cidrs" {
   default     = ["0.0.0.0/0"]
 }
 
+variable "ami_type" {
+  description = "AMI type for EKS nodes. Use AL2_ARM_64 for Graviton (t4g/m6g), AL2_x86_64 for x86"
+  type        = string
+  default     = "AL2_ARM_64"
+}
+
 variable "node_instance_types" {
   description = "Instance types for the managed node group"
   type        = list(string)
-  default     = ["t3.medium"]
+  default     = ["t4g.small"]
 }
 
 variable "node_min_size" {
@@ -112,6 +118,12 @@ variable "log_retention_days" {
   description = "Retention period for EKS control plane logs (days)"
   type        = number
   default     = 7 # Reduced for cost optimization
+}
+
+variable "additional_admin_arns" {
+  description = "List of IAM user/role ARNs to grant cluster admin access"
+  type        = list(string)
+  default     = []
 }
 
 variable "tags" {

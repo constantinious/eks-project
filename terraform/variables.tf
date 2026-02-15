@@ -80,7 +80,7 @@ variable "enable_vpc_flow_logs" {
 variable "cluster_version" {
   description = "Kubernetes version for the EKS cluster"
   type        = string
-  default     = "1.29"
+  default     = "1.31"
 }
 
 variable "cluster_endpoint_public_access" {
@@ -96,15 +96,27 @@ variable "cluster_endpoint_private_access" {
 }
 
 variable "cluster_endpoint_public_access_cidrs" {
-  description = "List of CIDR blocks allowed to access the EKS API server endpoint"
+  description = "CIDR blocks allowed to access the public EKS API endpoint"
   type        = list(string)
   default     = ["0.0.0.0/0"] # Restrict this in production
+}
+
+variable "additional_admin_arns" {
+  description = "List of IAM user/role ARNs to grant cluster admin access (in addition to the Terraform user)"
+  type        = list(string)
+  default     = []
 }
 
 variable "node_instance_types" {
   description = "Instance types for the managed node group"
   type        = list(string)
-  default     = ["t3.medium"]
+  default     = ["t4g.small"]
+}
+
+variable "ami_type" {
+  description = "AMI type for EKS nodes. Use AL2_ARM_64 for Graviton (t4g/m6g), AL2_x86_64 for x86"
+  type        = string
+  default     = "AL2_ARM_64"
 }
 
 variable "node_min_size" {
