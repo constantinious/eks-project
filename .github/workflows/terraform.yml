@@ -46,7 +46,7 @@ permissions:
   pull-requests: write
 
 env:
-  TF_VERSION: "1.5.7"
+  TF_VERSION: "1.13.5"
   AWS_REGION: "eu-west-1"
   TF_WORKING_DIR: "terraform"
   TF_ENVIRONMENT: "dev"
