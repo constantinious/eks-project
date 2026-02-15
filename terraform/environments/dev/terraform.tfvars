@@ -43,4 +43,5 @@ tags = {
   CostCenter = "development"
   Team       = "platform"
   Owner      = "constantinious"
+  Service    = "eks-platform"
 }
