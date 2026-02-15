@@ -42,9 +42,8 @@ resource "aws_iam_role_policy_attachment" "ebs_csi" {
 
 # Allow EBS CSI to use KMS for encrypted volumes
 resource "aws_iam_role_policy" "ebs_csi_kms" {
-  count = var.ebs_kms_key_arn != "" ? 1 : 0
-  name  = "${var.cluster_name}-ebs-csi-kms"
-  role  = aws_iam_role.ebs_csi.id
+  name = "${var.cluster_name}-ebs-csi-kms"
+  role = aws_iam_role.ebs_csi.id
 
   policy = jsonencode({
     Version = "2012-10-17"
