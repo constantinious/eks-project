@@ -42,4 +42,5 @@ alb_controller_version = "1.10.1"
 tags = {
   CostCenter = "development"
   Team       = "platform"
+  Owner      = "constantinious"
 }
