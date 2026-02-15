@@ -40,9 +40,9 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = merge(var.tags, {
-    Name                                          = "${var.project_name}-${var.environment}-public-${var.availability_zones[count.index]}"
-    "kubernetes.io/role/elb"                       = "1"
-    "kubernetes.io/cluster/${var.cluster_name}"    = "shared"
+    Name                                        = "${var.project_name}-${var.environment}-public-${var.availability_zones[count.index]}"
+    "kubernetes.io/role/elb"                    = "1"
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
   })
 }
 
@@ -57,9 +57,9 @@ resource "aws_subnet" "private" {
   availability_zone = var.availability_zones[count.index]
 
   tags = merge(var.tags, {
-    Name                                          = "${var.project_name}-${var.environment}-private-${var.availability_zones[count.index]}"
-    "kubernetes.io/role/internal-elb"              = "1"
-    "kubernetes.io/cluster/${var.cluster_name}"    = "shared"
+    Name                                        = "${var.project_name}-${var.environment}-private-${var.availability_zones[count.index]}"
+    "kubernetes.io/role/internal-elb"           = "1"
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
   })
 }
 
@@ -149,11 +149,11 @@ resource "aws_route_table_association" "private" {
 resource "aws_flow_log" "this" {
   count = var.enable_vpc_flow_logs ? 1 : 0
 
-  vpc_id               = aws_vpc.this.id
-  traffic_type         = "ALL"
-  iam_role_arn         = aws_iam_role.flow_log[0].arn
-  log_destination      = aws_cloudwatch_log_group.flow_log[0].arn
-  log_destination_type = "cloud-watch-logs"
+  vpc_id                   = aws_vpc.this.id
+  traffic_type             = "ALL"
+  iam_role_arn             = aws_iam_role.flow_log[0].arn
+  log_destination          = aws_cloudwatch_log_group.flow_log[0].arn
+  log_destination_type     = "cloud-watch-logs"
   max_aggregation_interval = 60
 
   tags = merge(var.tags, {

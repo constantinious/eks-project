@@ -23,11 +23,11 @@ cluster_endpoint_private_access      = true
 cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"] # Restrict in production!
 
 # Node Groups
-node_instance_types    = ["t4g.medium"]
-node_min_size          = 2
-node_max_size          = 5
-node_desired_size      = 2
-node_disk_size         = 30
+node_instance_types       = ["t4g.medium"]
+node_min_size             = 2
+node_max_size             = 5
+node_desired_size         = 2
+node_disk_size            = 30
 enable_cluster_autoscaler = true
 
 # DNS (set to true and configure when you have a domain)

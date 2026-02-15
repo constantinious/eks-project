@@ -23,11 +23,11 @@ cluster_endpoint_private_access      = true
 cluster_endpoint_public_access_cidrs = ["203.0.113.0/24"] # Restrict to your IP ranges
 
 # Node Groups
-node_instance_types    = ["t3.large"]
-node_min_size          = 3
-node_max_size          = 10
-node_desired_size      = 3
-node_disk_size         = 50
+node_instance_types       = ["t3.large"]
+node_min_size             = 3
+node_max_size             = 10
+node_desired_size         = 3
+node_disk_size            = 50
 enable_cluster_autoscaler = true
 
 # DNS
@@ -40,7 +40,7 @@ alb_controller_version = "1.10.1"
 
 # Additional tags
 tags = {
-  CostCenter  = "production"
-  Team        = "platform"
-  Compliance  = "required"
+  CostCenter = "production"
+  Team       = "platform"
+  Compliance = "required"
 }
