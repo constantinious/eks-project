@@ -6,7 +6,7 @@
 # General
 aws_region   = "eu-west-1"
 project_name = "eks-portfolio"
-environment  = "prod"
+environment  = "Prod"
 
 # VPC
 vpc_cidr             = "10.1.0.0/16"
@@ -38,9 +38,21 @@ hosted_zone_id       = "Z0123456789ABCDEFGHIJ"
 # ALB Controller
 alb_controller_version = "1.10.1"
 
+# Monitoring & Observability
+enable_monitoring        = true
+monitoring_force_destroy = false  # Protect production data
+grafana_admin_password   = "changeme-prod"  # Override via TF_VAR_grafana_admin_password
+prometheus_retention     = "30d"
+prometheus_pvc_size      = "100Gi"
+grafana_pvc_size         = "10Gi"
+loki_retention_days      = 90
+tempo_retention_days     = 14
+
 # Additional tags
 tags = {
   CostCenter = "production"
   Team       = "platform"
   Compliance = "required"
+  Owner      = "constantinious"
+  Service    = "eks-platform"
 }

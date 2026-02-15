@@ -1,0 +1,76 @@
+# ------------------------------------------------------------------------------
+# PrometheusRule - Application-Level Alerts
+# Monitors HTTP error rates, latency, and availability for workloads
+# that expose standard RED (Rate/Error/Duration) metrics.
+# ------------------------------------------------------------------------------
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: application-alerts
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/managed-by: kubernetes-manifests
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: application.rules
+      rules:
+        # --- High 5xx Error Rate ---
+        - alert: HighHttpErrorRate
+          expr: |
+            sum by(namespace, service) (
+              rate(http_requests_total{code=~"5.."}[5m])
+            ) /
+            sum by(namespace, service) (
+              rate(http_requests_total[5m])
+            ) * 100 > 5
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "High HTTP 5xx error rate for {{ $labels.namespace }}/{{ $labels.service }}"
+            description: "Service {{ $labels.service }} in {{ $labels.namespace }} is returning {{ $value | printf \"%.1f\" }}% 5xx errors (threshold: 5%)."
+
+        # --- High p99 Latency ---
+        - alert: HighRequestLatency
+          expr: |
+            histogram_quantile(0.99,
+              sum by(namespace, service, le) (
+                rate(http_request_duration_seconds_bucket[5m])
+              )
+            ) > 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High p99 latency for {{ $labels.namespace }}/{{ $labels.service }}"
+            description: "Service {{ $labels.service }} in {{ $labels.namespace }} has a p99 latency of {{ $value | printf \"%.2f\" }}s (threshold: 1s)."
+
+        # --- High 4xx Error Rate ---
+        - alert: HighClientErrorRate
+          expr: |
+            sum by(namespace, service) (
+              rate(http_requests_total{code=~"4.."}[5m])
+            ) /
+            sum by(namespace, service) (
+              rate(http_requests_total[5m])
+            ) * 100 > 25
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High HTTP 4xx error rate for {{ $labels.namespace }}/{{ $labels.service }}"
+            description: "Service {{ $labels.service }} in {{ $labels.namespace }} is returning {{ $value | printf \"%.1f\" }}% 4xx errors."
+
+        # --- Low Request Rate (possible outage) ---
+        - alert: LowRequestRate
+          expr: |
+            sum by(namespace, service) (
+              rate(http_requests_total[5m])
+            ) == 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Zero request rate for {{ $labels.namespace }}/{{ $labels.service }}"
+            description: "Service {{ $labels.service }} in {{ $labels.namespace }} has received zero requests for 10 minutes. Possible outage or routing issue."

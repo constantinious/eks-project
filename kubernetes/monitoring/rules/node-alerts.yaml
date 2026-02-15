@@ -1,0 +1,91 @@
+# ------------------------------------------------------------------------------
+# PrometheusRule - Node Alerts
+# Fires when node-level resources exceed safe thresholds.
+# Severity: warning → critical escalation.
+# ------------------------------------------------------------------------------
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: node-alerts
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/managed-by: kubernetes-manifests
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: node.rules
+      rules:
+        # --- CPU ---
+        - alert: NodeHighCpuUsage
+          expr: |
+            100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High CPU usage on {{ $labels.instance }}"
+            description: "Node {{ $labels.instance }} CPU usage is above 80% (current: {{ $value | printf \"%.1f\" }}%)."
+            runbook_url: "https://github.com/constantinious/eks-project/wiki/runbooks/NodeHighCpuUsage"
+
+        - alert: NodeCriticalCpuUsage
+          expr: |
+            100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Critical CPU usage on {{ $labels.instance }}"
+            description: "Node {{ $labels.instance }} CPU usage is above 95% (current: {{ $value | printf \"%.1f\" }}%)."
+
+        # --- Memory ---
+        - alert: NodeHighMemoryUsage
+          expr: |
+            (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High memory usage on {{ $labels.instance }}"
+            description: "Node {{ $labels.instance }} memory usage is above 85% (current: {{ $value | printf \"%.1f\" }}%)."
+
+        - alert: NodeCriticalMemoryUsage
+          expr: |
+            (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 95
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Critical memory usage on {{ $labels.instance }}"
+            description: "Node {{ $labels.instance }} memory usage is above 95% (current: {{ $value | printf \"%.1f\" }}%)."
+
+        # --- Disk ---
+        - alert: NodeDiskSpaceRunningLow
+          expr: |
+            (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) * 100 > 85
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Disk space running low on {{ $labels.instance }}"
+            description: "Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }}% full."
+
+        - alert: NodeDiskSpaceCritical
+          expr: |
+            (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) * 100 > 95
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Disk space critical on {{ $labels.instance }}"
+            description: "Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }}% full."
+
+        # --- Node Not Ready ---
+        - alert: NodeNotReady
+          expr: |
+            kube_node_status_condition{condition="Ready",status="true"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Node {{ $labels.node }} is not ready"
+            description: "Node {{ $labels.node }} has been in NotReady state for more than 5 minutes."

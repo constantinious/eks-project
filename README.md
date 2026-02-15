@@ -65,7 +65,11 @@ eks-portfolio-project/
 │   │   ├── eks/                   # EKS cluster, node groups, IRSA
 │   │   ├── alb-controller/        # AWS Load Balancer Controller (Helm)
 │   │   ├── route53/               # ExternalDNS, ACM certificate
-│   │   └── security/              # KMS keys, security groups
+│   │   ├── security/              # KMS keys, security groups
+│   │   ├── ebs-csi/               # EBS CSI driver, gp3 StorageClass
+│   │   ├── monitoring-storage/    # S3 buckets + IRSA for Loki & Tempo
+│   │   └── monitoring-stack/      # Prometheus, Grafana, Loki, Tempo, Promtail
+│   │       └── values/            # Helm values templates
 │   ├── environments/
 │   │   ├── dev/                   # Dev environment config
 │   │   └── prod/                  # Prod environment config
@@ -82,6 +86,15 @@ eks-portfolio-project/
 │   │   ├── 04-hpa.yaml            # Horizontal Pod Autoscaler
 │   │   ├── 05-network-policies.yaml
 │   │   └── 06-pdb.yaml            # Pod Disruption Budget
+│   ├── monitoring/                # Observability Kubernetes manifests
+│   │   ├── servicemonitors/       # ServiceMonitor CRDs for Prometheus
+│   │   │   ├── app-servicemonitor.yaml
+│   │   │   └── nginx-ingress-servicemonitor.yaml
+│   │   └── rules/                 # PrometheusRule CRDs for alerting
+│   │       ├── node-alerts.yaml
+│   │       ├── pod-alerts.yaml
+│   │       ├── cluster-alerts.yaml
+│   │       └── application-alerts.yaml
 │   └── helm-values/               # Helm chart value overrides
 │       ├── alb-controller-values.yaml
 │       ├── external-dns-values.yaml
@@ -99,7 +112,7 @@ eks-portfolio-project/
 |---|---|
 | **Encryption at rest** | KMS keys for EKS secrets and EBS volumes |
 | **Encryption in transit** | TLS everywhere via ACM certificates at ALB |
-| **IRSA** | IAM Roles for Service Accounts (ALB Controller, ExternalDNS, Cluster Autoscaler) |
+| **IRSA** | IAM Roles for Service Accounts (ALB Controller, ExternalDNS, Cluster Autoscaler, Loki, Tempo, EBS CSI) |
 | **IMDSv2** | Instance Metadata Service v2 enforced on all nodes |
 | **Private nodes** | All worker nodes in private subnets only |
 | **Network policies** | Default deny ingress + explicit allow rules |
@@ -260,6 +273,7 @@ Open the URL in your browser to see the 2048 game! 🎮
 | API endpoint CIDR | 0.0.0.0/0 | Restricted |
 | VPC CIDR | 10.0.0.0/16 | 10.1.0.0/16 |
 | Environment tag | Dev | Prod |
+| Monitoring | Enabled (compact retention) | Enabled (full retention) |
 
 ### Enabling DNS/TLS (Optional)
 
@@ -273,6 +287,108 @@ To enable Route53 and ACM integration:
 ---
 
 ## 📊 Monitoring & Observability
+
+The project includes a complete open-source observability stack deployed via Terraform, providing metrics, logs, and distributed traces with full correlation.
+
+### Observability Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         monitoring namespace                                │
+│                                                                             │
+│  ┌──────────────┐     ┌────────────────┐     ┌──────────────────────────┐  │
+│  │   Promtail   │────►│     Loki       │────►│  S3 (Loki logs bucket)   │  │
+│  │  (DaemonSet) │     │ (Log backend)  │     │  Lifecycle: 14d dev /    │  │
+│  │  all nodes   │     │  SingleBinary  │     │            90d prod      │  │
+│  └──────────────┘     └───────┬────────┘     └──────────────────────────┘  │
+│                               │ datasource                                  │
+│  ┌──────────────┐     ┌───────▼────────┐     ┌──────────────────────────┐  │
+│  │  Prometheus  │────►│    Grafana     │◄────│       Tempo              │  │
+│  │  (Metrics)   │     │  (Dashboards)  │     │  (Distributed tracing)   │  │
+│  │  15d / 30d   │     │  port :3000    │     │  OTLP / Jaeger / Zipkin  │  │
+│  └──────┬───────┘     └────────────────┘     └───────────┬──────────────┘  │
+│         │                                                │                  │
+│  ┌──────▼───────┐                                ┌───────▼──────────────┐  │
+│  │ AlertManager │                                │ S3 (Tempo traces     │  │
+│  │  (Routing)   │                                │     bucket)          │  │
+│  │  critical /  │                                │  Lifecycle: 3d dev / │  │
+│  │  warning     │                                │            14d prod  │  │
+│  └──────────────┘                                └──────────────────────┘  │
+│                                                                             │
+│  Network Policies: default-deny → allow internal → explicit allow rules     │
+│  Resource Quotas: 8/16 CPU, 16Gi/32Gi memory, 20 PVCs                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Stack Components
+
+| Component | Version | Purpose |
+|---|---|---|
+| **kube-prometheus-stack** | 67.9.0 | Prometheus, Grafana, AlertManager, node-exporter, kube-state-metrics |
+| **Loki** | 6.24.0 | Log aggregation with S3 backend (IRSA) |
+| **Promtail** | 6.16.6 | Log collection DaemonSet with JSON parsing |
+| **Tempo** | 1.14.0 | Distributed tracing with S3 backend (IRSA) |
+| **EBS CSI Driver** | 2.37.0 | gp3 StorageClass for monitoring PVCs |
+
+### Pre-configured Grafana Dashboards
+
+| Dashboard | ID | Description |
+|---|---|---|
+| Kubernetes Cluster Overview | 7249 | Cluster-wide resource usage |
+| Kubernetes Pods | 6417 | Per-pod CPU, memory, network |
+| Node Exporter Full | 1860 | Detailed host metrics |
+| Kubernetes API Server | 12006 | API server performance & errors |
+| NGINX Ingress | 2 | Ingress request rate & latency |
+
+### Alerting Rules
+
+The following PrometheusRules are included in `kubernetes/monitoring/rules/`:
+
+| Category | Alerts |
+|---|---|
+| **Node** | CPU > 80%/95%, Memory > 85%/95%, Disk > 85%/95%, Node NotReady |
+| **Pod** | Frequent restarts (>5/hr), OOMKilled, CrashLoopBackOff, Stuck Pending, CPU throttling > 50% |
+| **Cluster** | HPA at max replicas, PVC > 85%/95%, Certificate expiry < 7d, Deployment/StatefulSet/DaemonSet mismatch, API server 5xx > 3% |
+| **Application** | HTTP 5xx > 5%, p99 latency > 1s, HTTP 4xx > 25%, Zero request rate |
+
+### Accessing the Monitoring Stack
+
+```bash
+# Port-forward Grafana (default credentials: admin / <grafana_admin_password>)
+kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80
+
+# Port-forward Prometheus
+kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090
+
+# Port-forward AlertManager
+kubectl port-forward -n monitoring svc/kube-prometheus-stack-alertmanager 9093:9093
+```
+
+### Applying Custom ServiceMonitors & Rules
+
+After the cluster is running with the monitoring stack:
+
+```bash
+# Apply ServiceMonitors for custom app scraping
+kubectl apply -f kubernetes/monitoring/servicemonitors/
+
+# Apply alerting rules
+kubectl apply -f kubernetes/monitoring/rules/
+
+# Verify
+kubectl get servicemonitors -n monitoring
+kubectl get prometheusrules -n monitoring
+```
+
+### Environment Configuration
+
+| Parameter | Dev | Prod |
+|---|---|---|
+| Prometheus retention | 7d | 30d |
+| Prometheus PVC | 20Gi | 100Gi |
+| Loki retention (S3) | 14 days | 90 days |
+| Tempo retention (S3) | 3 days | 14 days |
+| S3 force destroy | true | false |
 
 ### EKS Control Plane Logs
 
@@ -394,3 +510,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/)
 - [ExternalDNS](https://github.com/kubernetes-sigs/external-dns)
 - [Cluster Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler)
+- [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
+- [Grafana Loki](https://grafana.com/docs/loki/latest/)
+- [Grafana Tempo](https://grafana.com/docs/tempo/latest/)
+- [Promtail](https://grafana.com/docs/loki/latest/send-data/promtail/)
+- [EBS CSI Driver](https://github.com/kubernetes-sigs/aws-ebs-csi-driver)

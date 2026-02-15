@@ -38,6 +38,16 @@ create_dns_resources = false
 # ALB Controller
 alb_controller_version = "1.10.1"
 
+# Monitoring & Observability
+enable_monitoring        = true
+monitoring_force_destroy = true  # Allow bucket deletion in dev
+grafana_admin_password   = "changeme-dev"  # Override via TF_VAR_grafana_admin_password
+prometheus_retention     = "7d"             # Shorter retention for dev
+prometheus_pvc_size      = "20Gi"           # Smaller PVCs for dev
+grafana_pvc_size         = "5Gi"
+loki_retention_days      = 14               # 2 weeks for dev
+tempo_retention_days     = 3                # 3 days for dev
+
 # Additional tags
 tags = {
   CostCenter = "development"

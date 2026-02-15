@@ -1,0 +1,24 @@
+# ------------------------------------------------------------------------------
+# ServiceMonitor for NGINX Ingress Controller (if deployed)
+# Captures request rate, latency, and error metrics from the ingress layer.
+# ------------------------------------------------------------------------------
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: nginx-ingress-metrics
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/managed-by: kubernetes-manifests
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - ingress-nginx
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ingress-nginx
+      app.kubernetes.io/component: controller
+  endpoints:
+    - port: metrics
+      interval: 15s
+      scrapeTimeout: 10s

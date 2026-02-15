@@ -1,0 +1,72 @@
+# ------------------------------------------------------------------------------
+# Tempo Helm Values
+# Distributed tracing backend with S3 storage
+# ------------------------------------------------------------------------------
+
+tempo:
+  storage:
+    trace:
+      backend: s3
+      s3:
+        bucket: ${s3_bucket_name}
+        endpoint: s3.${s3_bucket_region}.amazonaws.com
+        region: ${s3_bucket_region}
+        forcepathstyle: false
+
+  retention: ${retention_hours}h
+
+  # Accept traces from multiple protocols
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
+    jaeger:
+      protocols:
+        thrift_http:
+          endpoint: "0.0.0.0:14268"
+        grpc:
+          endpoint: "0.0.0.0:14250"
+    zipkin:
+      endpoint: "0.0.0.0:9411"
+
+  # Metrics generation from traces
+  metricsGenerator:
+    enabled: true
+    remoteWriteUrl: "http://kube-prometheus-stack-prometheus.monitoring:9090/api/v1/write"
+
+  # Global overrides
+  overrides:
+    defaults:
+      metrics_generator:
+        processors:
+          - service-graphs
+          - span-metrics
+
+# --- Service Account with IRSA ---
+serviceAccount:
+  create: true
+  name: tempo
+  annotations:
+    eks.amazonaws.com/role-arn: ${iam_role_arn}
+
+# --- Resources ---
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+  limits:
+    cpu: "1000m"
+    memory: "1Gi"
+
+# --- Persistence for WAL ---
+persistence:
+  enabled: true
+  storageClassName: "${storage_class}"
+  size: 10Gi
+
+# --- Service for receiving traces ---
+service:
+  type: ClusterIP
