@@ -156,19 +156,19 @@ module "route53" {
 # ------------------------------------------------------------------------------
 # ArgoCD Module (EKS Add-on for GitOps)
 # ------------------------------------------------------------------------------
+# ArgoCD Module (Helm-based GitOps)
+# ------------------------------------------------------------------------------
 module "argocd" {
   source = "./modules/argocd"
   count  = var.enable_argocd ? 1 : 0
 
-  cluster_name           = module.eks.cluster_name
-  addon_version          = var.argocd_addon_version
+  chart_version          = var.argocd_addon_version
   enable_demo_app_sync   = var.argocd_enable_demo_app_sync
   git_repo_url           = var.argocd_git_repo_url
   git_target_revision    = var.argocd_git_target_revision
   git_manifests_path     = var.argocd_git_manifests_path
   auto_prune             = var.argocd_auto_prune
   auto_sync              = var.argocd_auto_sync
-  tags                   = local.common_tags
 
   depends_on = [module.eks]
 }

@@ -1,16 +1,48 @@
-resource "aws_eks_addon" "argocd" {
-  cluster_name             = var.cluster_name
-  addon_name               = "argo-cd"
-  addon_version            = var.addon_version
-  resolve_conflicts_on_create = "OVERWRITE"
-  resolve_conflicts_on_update = "PRESERVE"
+resource "helm_release" "argocd" {
+  name             = "argo-cd"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argo-cd"
+  version          = var.chart_version
+  namespace        = "argocd"
+  create_namespace = true
 
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.cluster_name}-argocd-addon"
-    }
-  )
+  # Server configuration
+  set {
+    name  = "server.service.type"
+    value = "ClusterIP"
+  }
+
+  # Disable HA for cost optimization (single replica)
+  set {
+    name  = "controller.replicas"
+    value = "1"
+  }
+
+  set {
+    name  = "server.replicas"
+    value = "1"
+  }
+
+  set {
+    name  = "repoServer.replicas"
+    value = "1"
+  }
+
+  set {
+    name  = "applicationSet.replicas"
+    value = "1"
+  }
+
+  # Disable unused components for minimal footprint
+  set {
+    name  = "dex.enabled"
+    value = "false"
+  }
+
+  set {
+    name  = "notifications.enabled"
+    value = "false"
+  }
 }
 
 # Note: The ArgoCD Application manifest for demo-app will be created

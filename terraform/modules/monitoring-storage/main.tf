@@ -11,7 +11,7 @@ data "aws_partition" "current" {}
 # Loki S3 Bucket (log chunks + index)
 # ------------------------------------------------------------------------------
 resource "aws_s3_bucket" "loki" {
-  bucket        = "${var.cluster_name}-loki-${data.aws_caller_identity.current.account_id}"
+  bucket        = lower("${var.cluster_name}-loki-${data.aws_caller_identity.current.account_id}")
   force_destroy = var.force_destroy
 
   tags = merge(var.tags, {
@@ -67,7 +67,7 @@ resource "aws_s3_bucket_public_access_block" "loki" {
 # Tempo S3 Bucket (trace data)
 # ------------------------------------------------------------------------------
 resource "aws_s3_bucket" "tempo" {
-  bucket        = "${var.cluster_name}-tempo-${data.aws_caller_identity.current.account_id}"
+  bucket        = lower("${var.cluster_name}-tempo-${data.aws_caller_identity.current.account_id}")
   force_destroy = var.force_destroy
 
   tags = merge(var.tags, {

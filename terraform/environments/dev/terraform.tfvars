@@ -33,11 +33,11 @@ cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]                            
 enabled_cluster_log_types            = ["api"]                                        # Minimal logging to reduce CloudWatch costs
 additional_admin_arns                = ["arn:aws:iam::992382750905:user/KostasAdmin"] # Additional cluster admins
 
-# Node Groups (minimal cost: t4g.small, 1-3 nodes)
-node_instance_types       = ["t4g.small"]
-node_min_size             = 1
-node_max_size             = 3
-node_desired_size         = 2
+# Node Groups (with monitoring: t4g.medium for 4GB RAM, 2-5 nodes)
+node_instance_types       = ["t4g.medium"]  # 4GB RAM needed for monitoring stack
+node_min_size             = 2
+node_max_size             = 5
+node_desired_size         = 3  # Start with 3 nodes for monitoring
 node_disk_size            = 20
 enable_cluster_autoscaler = true
 
@@ -58,8 +58,8 @@ argocd_auto_sync             = true  # Auto-deploy when Git changes
 # ALB Controller
 alb_controller_version = "1.10.1"
 
-# Monitoring & Observability (disabled for cost optimization)
-enable_monitoring        = false          # Disable to save costs
+# Monitoring & Observability
+enable_monitoring        = true           # Enable Prometheus, Grafana, Loki, Tempo stack
 monitoring_force_destroy = true           # Allow bucket deletion in dev
 grafana_admin_password   = "CHANGE_ME"    # REQUIRED: Set via TF_VAR_grafana_admin_password environment variable
 prometheus_retention     = "3d"           # Minimal retention
