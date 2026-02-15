@@ -1,0 +1,43 @@
+---
+# ------------------------------------------------------------------------------
+# Demo Application Ingress
+# Configures the AWS ALB via the AWS Load Balancer Controller
+# Handles SSL termination at the ALB using ACM certificate
+# ------------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demo-app
+  namespace: demo-app
+  labels:
+    app.kubernetes.io/name: demo-app
+  annotations:
+    # ALB Controller annotations
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
+    alb.ingress.kubernetes.io/tags: Environment=dev,Project=eks-portfolio,ManagedBy=kubernetes
+
+    # ACM certificate ARN - replace with your certificate ARN
+    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:eu-west-1:ACCOUNT_ID:certificate/CERT_ID
+
+    # ExternalDNS annotation - replace with your domain
+    # external-dns.alpha.kubernetes.io/hostname: app.dev.example.com
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: demo-app
+                port:
+                  name: http

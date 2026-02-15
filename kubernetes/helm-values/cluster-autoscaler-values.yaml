@@ -1,0 +1,37 @@
+# ------------------------------------------------------------------------------
+# Cluster Autoscaler - Helm Values
+# Automatically scales node groups based on pod scheduling demands
+# Deploy manually via: helm install cluster-autoscaler autoscaler/cluster-autoscaler -f cluster-autoscaler-values.yaml -n kube-system
+# Repo: https://kubernetes.github.io/autoscaler
+# ------------------------------------------------------------------------------
+
+autoDiscovery:
+  clusterName: "" # Set to your cluster name
+
+awsRegion: eu-west-1
+
+rbac:
+  create: true
+  serviceAccount:
+    create: true
+    name: cluster-autoscaler
+    annotations: {}
+    # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/CLUSTER_NAME-cluster-autoscaler
+
+extraArgs:
+  balance-similar-node-groups: true
+  skip-nodes-with-local-storage: false
+  expander: least-waste
+  scale-down-delay-after-add: 5m
+  scale-down-unneeded-time: 5m
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+podDisruptionBudget:
+  maxUnavailable: 1

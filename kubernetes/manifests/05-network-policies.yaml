@@ -1,0 +1,65 @@
+---
+# ------------------------------------------------------------------------------
+# Network Policies
+# Restrict pod-to-pod communication following least-privilege principle
+# ------------------------------------------------------------------------------
+
+# Default deny all ingress traffic in the namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: demo-app
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+
+---
+# Allow ingress only from the ALB (via the AWS LB Controller target group bindings)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-alb-ingress
+  namespace: demo-app
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: demo-app
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 80
+
+---
+# Default deny all egress traffic (optional - uncomment if needed)
+# Note: This will block DNS resolution. If enabled, add a DNS egress rule.
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: default-deny-egress
+#   namespace: demo-app
+# spec:
+#   podSelector: {}
+#   policyTypes:
+#     - Egress
+
+---
+# Allow DNS egress for all pods in the namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: demo-app
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

@@ -1,0 +1,41 @@
+# ------------------------------------------------------------------------------
+# AWS Load Balancer Controller - Helm Values
+# These are supplementary values; primary config is set via Terraform
+# ------------------------------------------------------------------------------
+
+replicaCount: 2
+
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+
+# Resource limits
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Enable pod disruption budget
+podDisruptionBudget:
+  maxUnavailable: 1
+
+# Enable leader election
+enableLeaderElection: true
+
+# Logging
+logLevel: info
+
+# IngressClass configuration
+ingressClass: alb
+createIngressClassResource: true
+
+# Default target type
+defaultTargetType: ip
+
+# Enable Shield, WAF, WAFv2
+enableShield: false
+enableWaf: false
+enableWafv2: false

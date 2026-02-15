@@ -1,0 +1,21 @@
+---
+# ------------------------------------------------------------------------------
+# Demo Application Service (ClusterIP)
+# Internal service for the demo app, exposed via Ingress/ALB
+# ------------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-app
+  namespace: demo-app
+  labels:
+    app.kubernetes.io/name: demo-app
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: demo-app
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http

@@ -1,0 +1,37 @@
+# ------------------------------------------------------------------------------
+# ExternalDNS - Helm Values
+# These are supplementary values; primary config is set via Terraform
+# ------------------------------------------------------------------------------
+
+provider:
+  name: aws
+
+# Sync policy - "sync" will delete DNS records when Ingress is removed
+policy: sync
+
+# Only look at public hosted zones
+sources:
+  - ingress
+  - service
+
+# TXT record owner ID to prevent conflicts
+txtOwnerId: eks-portfolio
+
+# Log level
+logLevel: info
+logFormat: text
+
+# Resource limits
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+# Interval between DNS sync
+interval: 1m
+
+# Trigger loop interval
+triggerLoopOnEvent: true
