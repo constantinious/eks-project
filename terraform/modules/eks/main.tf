@@ -339,18 +339,7 @@ resource "aws_iam_role_policy" "cluster_autoscaler" {
 
 # ------------------------------------------------------------------------------
 # EKS Access Entry for cluster admin
-# Import existing entries that were created before the ARN conversion fix
 # ------------------------------------------------------------------------------
-import {
-  to = aws_eks_access_entry.admin
-  id = "eks-portfolio-Dev:arn:aws:iam::992382750905:role/github-actions-eks-project"
-}
-
-import {
-  to = aws_eks_access_policy_association.admin
-  id = "eks-portfolio-Dev#arn:aws:iam::992382750905:role/github-actions-eks-project#arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy#type:cluster"
-}
-
 resource "aws_eks_access_entry" "admin" {
   cluster_name  = aws_eks_cluster.this.name
   principal_arn = local.base_role_arn
