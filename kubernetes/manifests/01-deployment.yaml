@@ -1,7 +1,7 @@
 ---
 # ------------------------------------------------------------------------------
 # Demo Application Deployment
-# Nginx web server for showcasing the EKS cluster with ALB Ingress
+# Prague Dashboard - Weather & Currency Exchange App
 # ------------------------------------------------------------------------------
 apiVersion: apps/v1
 kind: Deployment
@@ -10,11 +10,10 @@ metadata:
   namespace: demo-app
   labels:
     app.kubernetes.io/name: demo-app
-    app.kubernetes.io/version: "1.1.0"
+    app.kubernetes.io/version: "1.2.0"
     app.kubernetes.io/managed-by: argocd
-    deployment.update: "gitops-test"
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: demo-app
@@ -25,7 +24,10 @@ spec:
     spec:
       containers:
         - name: demo-app
-          image: nginxinc/nginx-unprivileged:1.25-alpine
+          # Prague Dashboard - Flask app with Prague weather & CZK/EUR exchange rates
+          # Built from demo-app/ directory - see demo-app/README.md for details
+          image: 992382750905.dkr.ecr.eu-west-1.amazonaws.com/prague-dashboard:v1.2.0
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
               protocol: TCP
@@ -33,25 +35,25 @@ spec:
           # Resource requests and limits (required for HPA)
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
-            limits:
-              cpu: 250m
+              cpu: 150m
               memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
           # Health checks
           livenessProbe:
             httpGet:
-              path: /
+              path: /health
               port: http
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /
+              path: /health
               port: http
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
