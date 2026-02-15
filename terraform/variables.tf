@@ -276,10 +276,10 @@ variable "enable_argocd" {
   default     = true
 }
 
-variable "argocd_addon_version" {
-  description = "Version of ArgoCD EKS add-on (null = latest)"
+variable "argocd_chart_version" {
+  description = "ArgoCD Helm chart version"
   type        = string
-  default     = null
+  default     = "7.7.15"
 }
 
 variable "argocd_enable_demo_app_sync" {

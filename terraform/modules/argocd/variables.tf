@@ -1,18 +1,7 @@
-variable "cluster_name" {
-  description = "Name of the EKS cluster"
+variable "chart_version" {
+  description = "ArgoCD Helm chart version"
   type        = string
-}
-
-variable "addon_version" {
-  description = "Version of the ArgoCD EKS add-on"
-  type        = string
-  default     = null # Uses latest compatible version
-}
-
-variable "tags" {
-  description = "Tags to apply to resources"
-  type        = map(string)
-  default     = {}
+  default     = "7.7.15"
 }
 
 variable "enable_demo_app_sync" {
