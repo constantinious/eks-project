@@ -6,10 +6,11 @@
 
 # ------------------------------------------------------------------------------
 # Provider Configuration
+# Locally: export AWS_PROFILE=terraform_user before running terraform
+# CI: credentials are injected via OIDC (configure-aws-credentials action)
 # ------------------------------------------------------------------------------
 provider "aws" {
-  region  = var.aws_region
-  profile = "terraform_user"
+  region = var.aws_region
 
   default_tags {
     tags = {

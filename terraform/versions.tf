@@ -25,12 +25,13 @@ terraform {
   }
 
   # S3 backend with native S3 state locking (no DynamoDB needed)
+  # Locally: export AWS_PROFILE=terraform_user before running terraform
+  # CI: credentials are injected via OIDC (configure-aws-credentials action)
   backend "s3" {
     bucket       = "eks-portfolio-terraform-state"
     key          = "eks-cluster/terraform.tfstate"
     region       = "eu-west-1"
     use_lockfile = true
     encrypt      = true
-    profile      = "terraform_user"
   }
 }
