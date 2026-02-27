@@ -13,7 +13,7 @@ resource "kubernetes_namespace_v1" "monitoring" {
 
     labels = {
       "app.kubernetes.io/managed-by"               = "terraform"
-      "pod-security.kubernetes.io/enforce"         = "baseline"
+      "pod-security.kubernetes.io/enforce"         = "privileged"
       "pod-security.kubernetes.io/enforce-version" = "latest"
     }
   }

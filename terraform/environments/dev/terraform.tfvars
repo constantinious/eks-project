@@ -29,9 +29,9 @@ enable_vpc_flow_logs = false # Disable to reduce CloudWatch costs
 cluster_version                      = "1.32"
 cluster_endpoint_public_access       = true
 cluster_endpoint_private_access      = true
-cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]                                  # Restrict in production!
+cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]                                  # ⚠️ SECURITY: Restrict to your IP in production!
 enabled_cluster_log_types            = ["api"]                                        # Minimal logging to reduce CloudWatch costs
-additional_admin_arns                = ["arn:aws:iam::992382750905:user/KostasAdmin"] # Additional cluster admins
+additional_admin_arns                = []  # ⚠️ REQUIRED: Add your IAM admin ARNs here for kubectl access
 
 # Node Groups (with monitoring: t4g.medium for 4GB RAM, 2-5 nodes)
 node_instance_types       = ["t4g.medium"]  # 4GB RAM needed for monitoring stack
@@ -43,8 +43,8 @@ enable_cluster_autoscaler = true
 
 # DNS (ExternalDNS configuration)
 create_dns_resources = true
-domain_name          = "condevelop.net"
-hosted_zone_id       = "Z01814392FEE2T297FHXM"
+domain_name          = "example.com"  # ⚠️ REQUIRED: Replace with your actual domain (e.g., "myportfolio.com")
+hosted_zone_id       = "ZXXXXXXXXXXXXX"  # ⚠️ REQUIRED: Replace with your Route53 hosted zone ID (e.g., "Z0123456789ABCDEF")
 
 # ArgoCD (GitOps - automatic deployment from Git)
 enable_argocd                = true
@@ -61,7 +61,7 @@ alb_controller_version = "1.10.1"
 # Monitoring & Observability
 enable_monitoring        = true           # Enable Prometheus, Grafana, Loki, Tempo stack
 monitoring_force_destroy = true           # Allow bucket deletion in dev
-grafana_admin_password   = "CHANGE_ME"    # REQUIRED: Set via TF_VAR_grafana_admin_password environment variable
+grafana_admin_password   = "CHANGE_ME"    # ⚠️ SECURITY: NEVER commit real passwords! Set via: export TF_VAR_grafana_admin_password="your-secure-password"
 prometheus_retention     = "3d"           # Minimal retention
 prometheus_pvc_size      = "10Gi"         # Minimal PVCs
 grafana_pvc_size         = "2Gi"

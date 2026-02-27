@@ -45,20 +45,3 @@ serviceMonitor:
   enabled: true
   labels:
     release: kube-prometheus-stack
-
-# --- Extra volume mounts for container logs ---
-extraVolumes:
-  - name: containers
-    hostPath:
-      path: /var/log/containers
-  - name: pods
-    hostPath:
-      path: /var/log/pods
-
-extraVolumeMounts:
-  - name: containers
-    mountPath: /var/log/containers
-    readOnly: true
-  - name: pods
-    mountPath: /var/log/pods
-    readOnly: true
