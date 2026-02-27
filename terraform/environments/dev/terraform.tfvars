@@ -26,7 +26,7 @@ single_nat_gateway   = true  # Cost optimization: single NAT for dev
 enable_vpc_flow_logs = false # Disable to reduce CloudWatch costs
 
 # EKS (minimal cost configuration)
-cluster_version                      = "1.32"
+cluster_version                      = "1.35"
 cluster_endpoint_public_access       = true
 cluster_endpoint_private_access      = true
 cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]                                  # ⚠️ SECURITY: Restrict to your IP in production!

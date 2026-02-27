@@ -3,7 +3,7 @@
 Production-ready AWS EKS infrastructure demonstrating DevOps best practices using Terraform, with complete CI/CD pipeline integration.
 
 ![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.10.0-844FBA?logo=terraform)
-![AWS](https://img.shields.io/badge/AWS-EKS_1.29-FF9900?logo=amazonaws)
+![AWS](https://img.shields.io/badge/AWS-EKS_1.35-FF9900?logo=amazonaws)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
 ---
@@ -30,7 +30,7 @@ Production-ready AWS EKS infrastructure demonstrating DevOps best practices usin
     │  Cert    │                    │  │  ┌──────────── Private Subnets ───────────────┐ │ │
     └──────────┘                    │  │  │                 │                           │ │ │
                                     │  │  │  ┌──────────────▼──────────────────────┐    │ │ │
-    ┌──────────┐                    │  │  │  │         EKS Cluster (v1.29)        │    │ │ │
+    ┌──────────┐                    │  │  │  │         EKS Cluster (v1.35)        │    │ │ │
     │   KMS    │                    │  │  │  │                                     │    │ │ │
     │  Keys    │──── Encryption     │  │  │  │  ┌─────────┐ ┌──────────────────┐  │    │ │ │
     └──────────┘                    │  │  │  │  │Demo App │ │  ALB Controller  │  │    │ │ │

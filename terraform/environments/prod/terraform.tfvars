@@ -17,7 +17,7 @@ single_nat_gateway   = false # HA: one NAT Gateway per AZ
 enable_vpc_flow_logs = true
 
 # EKS
-cluster_version                      = "1.29"
+cluster_version                      = "1.35"
 cluster_endpoint_public_access       = true
 cluster_endpoint_private_access      = true
 cluster_endpoint_public_access_cidrs = ["203.0.113.0/24"] # Restrict to your IP ranges
